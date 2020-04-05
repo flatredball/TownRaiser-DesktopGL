@@ -1477,6 +1477,7 @@
     <Compile Include="Factories\UnitFactory.Generated.cs" />
     <Compile Include="FileAliases.Generated.cs" />
     <Compile Include="GlobalContent.Generated.cs" />
+    <Compile Include="GlueControl\GlueControlManager.Generated.cs" />
     <Compile Include="GumRuntimes\ActionStackContainerRuntime.cs" />
     <Compile Include="GumRuntimes\ActionStackContainerRuntime.Generated.cs">
       <DependentUpon>ActionStackContainerRuntime.cs</DependentUpon>

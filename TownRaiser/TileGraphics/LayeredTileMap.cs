@@ -29,8 +29,8 @@ namespace FlatRedBall.TileGraphics
         #endregion
 
         #region Properties
-        public float? NumberTilesWide { get; private set; }
-        public float? NumberTilesTall { get; private set; }
+        public int? NumberTilesWide { get; private set; }
+        public int? NumberTilesTall { get; private set; }
         public float? WidthPerTile { get; private set; }
         public float? HeightPerTile { get; private set; }
         public Dictionary<string, List<NamedValue>> TileProperties
@@ -112,7 +112,10 @@ namespace FlatRedBall.TileGraphics
         }
 
         /// <summary>
-        /// Returns the width in world units of the entire map.  The map may not visibly extend to this width;
+        /// Returns the width in world units of the entire map.  This is determined
+        /// by multiplying the tile size by the number of tiles specified in Tiled. Since
+        /// maps may have blank areas, this value may not necessarily reflect visible map 
+        /// width.
         /// </summary>
         public float Width
         {
@@ -130,7 +133,10 @@ namespace FlatRedBall.TileGraphics
         }
 
         /// <summary>
-        /// Returns the height in world units of the entire map.  The map may not visibly extend to this height;
+        /// Returns the height in world units of the entire map.  This is determined
+        /// by multiplying the tile size by the number of tiles specified in Tiled. Since
+        /// maps may have blank areas, this value may not necessarily reflect visible map
+        /// height.
         /// </summary>
         public float Height
         {
@@ -387,6 +393,10 @@ namespace FlatRedBall.TileGraphics
                         matchingLayer.Visible = mapLayer.visible == 1;
                         matchingLayer.Alpha = mapLayer.Opacity;
                     }
+                    else if (layer is mapObjectgroup objectLayer)
+                    {
+                        matchingLayer.Visible = objectLayer.IsVisible;
+                    }
                 }
             }
 
@@ -476,7 +486,7 @@ namespace FlatRedBall.TileGraphics
                 mdb.Alpha = imageLayer.Opacity;
                 mdb.AttachTo(toReturn, false);
                 mdb.Paste(newSprite);
-                mdb.Visible = imageLayer.Visible;
+                mdb.Visible = imageLayer.IsVisible;
 
                 toReturn.mMapLists.Add(mdb);
             }
@@ -544,7 +554,7 @@ namespace FlatRedBall.TileGraphics
 
             toReturn.Animation = new LayeredTileMapAnimation(animationDictionary);
 
-            AddTileShapeCollections(toReturn, tms);
+            AddTileShapeCollections(toReturn, tms, separateOnTileType: true);
 
 
             toReturn.MapProperties = tms.properties
@@ -575,7 +585,7 @@ namespace FlatRedBall.TileGraphics
             }
         }
 
-        private static void AddTileShapeCollections(LayeredTileMap layeredTileMap, TiledMapSave tms)
+        private static void AddTileShapeCollections(LayeredTileMap layeredTileMap, TiledMapSave tms, bool separateOnTileType)
         {
             var allTilesets = tms.Tilesets;
 
@@ -594,23 +604,26 @@ namespace FlatRedBall.TileGraphics
                 {
                     tileset = tms.GetTilesetForGid(firstNonZero);
                 }
-                AddTileShapeCollectionForLayer(layer, nameCollisionPairs, tileset, tms.tilewidth, i);
+                AddTileShapeCollectionForLayer(layer, nameCollisionPairs, tileset, tms.tilewidth, i, separateOnTileType);
             }
             foreach (var item in nameCollisionPairs.Values)
             {
-                var sortOnY = layeredTileMap.Height > layeredTileMap.Width;
-                if (sortOnY)
+                if (item.Rectangles.Count > 0 || item.Polygons.Count > 0)
                 {
-                    item.SortAxis = Math.Axis.Y;
-                }
-                else
-                {
-                    item.SortAxis = Math.Axis.X;
-                }
+                    var sortOnY = layeredTileMap.Height > layeredTileMap.Width;
+                    if (sortOnY)
+                    {
+                        item.SortAxis = Math.Axis.Y;
+                    }
+                    else
+                    {
+                        item.SortAxis = Math.Axis.X;
+                    }
 
-                item.RefreshAllRepositionDirections();
+                    item.RefreshAllRepositionDirections();
 
-                layeredTileMap.Collisions.Add(item);
+                    layeredTileMap.Collisions.Add(item);
+                }
             }
         }
 
@@ -631,7 +644,8 @@ namespace FlatRedBall.TileGraphics
             }
         }
 
-        private static void AddTileShapeCollectionForLayer(TMXGlueLib.MapLayer layer, Dictionary<string, TileCollisions.TileShapeCollection> collisionDictionary, TMXGlueLib.Tileset tileset, float tileDimension, float z)
+        private static void AddTileShapeCollectionForLayer(TMXGlueLib.MapLayer layer, Dictionary<string, TileCollisions.TileShapeCollection> collisionDictionary,
+            TMXGlueLib.Tileset tileset, float tileDimension, float z, bool separateOnTileType)
         {
             Math.Geometry.AxisAlignedRectangle rectangle = null;
             Math.Geometry.Polygon polygon = null;
@@ -642,109 +656,163 @@ namespace FlatRedBall.TileGraphics
 
             bool sortOnY = layer.height > layer.width;
 
-            var collection = GetOrAddTileShapeCollection(layer.Name, collisionDictionary);
 
-            if(tileset != null)
+            if (tileset != null)
             {
                 foreach (var tilesetTile in tileset.Tiles.Where(item => item.Objects?.@object?.Length > 0))
-            {
-                var tilesetTileGid = tilesetTile.id + tileset.Firstgid;
-                foreach (var tilesetObject in tilesetTile.Objects.@object)
                 {
 
-                    TiledMapToShapeCollectionConverter.ConvertTiledObjectToFrbShape(tilesetObject, out polygon, out rectangle, out circle);
-                    if (rectangle != null)
+                    var tilesetTileGid = tilesetTile.id + tileset.Firstgid;
+                    foreach (var tilesetObject in tilesetTile.Objects.@object)
                     {
-                        rectangle.Z = z;
-                        if (sortOnY)
+                        var name = layer.Name;
+
+                        TiledMapToShapeCollectionConverter.ConvertTiledObjectToFrbShape(tilesetObject, out polygon, out rectangle, out circle);
+                        if (rectangle != null)
                         {
-                            for (int y = 0; y < layer.height; y++)
+                            var collectionName = layer.Name;
+                            if (tilesetObject.Type != null && separateOnTileType)
                             {
-                                for (int x = 0; x < layer.width; x++)
-                                {
-                                    AddRectangleCloneAtXY(layer, tileDimension, rectangle, tiles, tilesetTileGid, x, y, collection);
-                                }
+                                collectionName += "_" + tilesetObject.Type;
                             }
-                        }
-                        else
-                        {
-                            for (int x = 0; x < layer.width; x++)
+                            var collection = GetOrAddTileShapeCollection(collectionName, collisionDictionary);
+                            collection.GridSize = tileDimension;
+                            rectangle.Z = z;
+                            if (sortOnY)
                             {
                                 for (int y = 0; y < layer.height; y++)
                                 {
-                                    AddRectangleCloneAtXY(layer, tileDimension, rectangle, tiles, tilesetTileGid, x, y, collection);
+                                    for (int x = 0; x < layer.width; x++)
+                                    {
+                                        AddRectangleCloneAtXY(layer, tileDimension, rectangle, tiles, tilesetTileGid, x, y, collection);
+                                    }
                                 }
                             }
-                        }
-                    }
-                    else if (polygon != null)
-                    {
-
-                        // For tile polygons we want them to be centered on the tile.
-                        // To do this, we shift all points by its position:
-                        for (int i = 0; i < polygon.Points.Count; i++)
-                        {
-                            var point = polygon.Points[i];
-                            point.X += polygon.Position.X - tileDimension / 2.0f;
-                            point.Y += polygon.Position.Y + tileDimension / 2.0f;
-
-                            polygon.SetPoint(i, point);
-
-                        }
-
-                        polygon.Z = z;
-
-                        if (sortOnY)
-                        {
-                            for (int y = 0; y < layer.height; y++)
+                            else
                             {
                                 for (int x = 0; x < layer.width; x++)
                                 {
-                                    AddPolygonCloneAtXY(layer, tileDimension, polygon, tiles, tilesetTileGid, x, y, collection);
-
+                                    for (int y = 0; y < layer.height; y++)
+                                    {
+                                        AddRectangleCloneAtXY(layer, tileDimension, rectangle, tiles, tilesetTileGid, x, y, collection);
+                                    }
                                 }
                             }
                         }
-                        else
+                        else if (polygon != null)
                         {
-                            for (int x = 0; x < layer.width; x++)
+                            var collectionName = layer.Name;
+                            if (tilesetObject.Type != null && separateOnTileType)
+                            {
+                                collectionName += "_" + tilesetObject.Type;
+                            }
+                            var collection = GetOrAddTileShapeCollection(collectionName, collisionDictionary);
+                            collection.GridSize = tileDimension;
+
+                            // For tile polygons we want them to be centered on the tile.
+                            // To do this, we shift all points by its position:
+                            for (int i = 0; i < polygon.Points.Count; i++)
+                            {
+                                var point = polygon.Points[i];
+                                point.X += polygon.Position.X - tileDimension / 2.0f;
+                                point.Y += polygon.Position.Y + tileDimension / 2.0f;
+
+                                polygon.SetPoint(i, point);
+
+                            }
+
+                            polygon.Z = z;
+
+                            if (sortOnY)
                             {
                                 for (int y = 0; y < layer.height; y++)
                                 {
-                                    AddPolygonCloneAtXY(layer, tileDimension, polygon, tiles, tilesetTileGid, x, y, collection);
+                                    for (int x = 0; x < layer.width; x++)
+                                    {
+                                        var i = y * layer.width + x;
+
+                                        if ((tiles[i] & 0x0fffffff) == tilesetTileGid)
+                                        {
+                                            var cloned = AddPolygonCloneAtXY(layer, tileDimension, polygon, tiles, tilesetTileGid, i, collection);
+
+                                            ApplyFlip(tiles[i], cloned);
+                                        }
+                                    }
                                 }
                             }
-                        }
+                            else
+                            {
+                                for (int x = 0; x < layer.width; x++)
+                                {
+                                    for (int y = 0; y < layer.height; y++)
+                                    {
+                                        var i = y * layer.width + x;
 
-                    }
-                    else if (circle != null)
-                    {
-                        throw new NotImplementedException("Need to handle circles...");
+                                        if ((tiles[i] & 0x0fffffff) == tilesetTileGid)
+                                        {
+                                            var cloned = AddPolygonCloneAtXY(layer, tileDimension, polygon, tiles, tilesetTileGid, i, collection);
+
+                                            ApplyFlip(tiles[i], cloned);
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                        else if (circle != null)
+                        {
+                            throw new NotImplementedException("Need to handle circles...");
+                        }
                     }
                 }
-            }
             }
 
         }
 
-        private static void AddPolygonCloneAtXY(MapLayer layer, float tileDimension, Polygon polygon, List<uint> tiles, long tilesetTileGid, int x, int y,
+        private static void ApplyFlip(uint idWithFlip, Polygon cloned)
+        {
+            TiledMapSave.GetFlipBoolsFromGid(idWithFlip,
+                out bool flipHorizontally,
+                out bool flipVertically,
+                out bool flipDiagonally);
+
+            if (flipDiagonally)
+            {
+                for (int i = 0; i < cloned.Points.Count; i++)
+                {
+                    Point point = cloned.Points[i];
+
+                    var tempY = point.Y;
+                    point.Y = -point.X;
+                    point.X = -tempY;
+
+                    cloned.SetPoint(i, point);
+                }
+            }
+            if (flipHorizontally)
+            {
+                cloned.FlipRelativePointsHorizontally();
+            }
+            if (flipVertically)
+            {
+                cloned.FlipRelativePointsVertically();
+            }
+        }
+
+        private static Polygon AddPolygonCloneAtXY(MapLayer layer, float tileDimension, Polygon polygon, List<uint> tiles, long tilesetTileGid, int index,
             TileCollisions.TileShapeCollection collectionForThisName)
         {
-            var i = y * layer.width + x;
+            int xIndex = index % layer.width;
+            // intentional int division
+            int yIndex = index / layer.width;
 
-            if (tiles[i] == tilesetTileGid)
-            {
-                int xIndex = i % layer.width;
-                // intentional int division
-                int yIndex = i / layer.width;
+            var cloned = polygon.Clone();
 
-                var cloned = polygon.Clone();
+            cloned.X = (xIndex + .5f) * tileDimension;
+            cloned.Y = -(yIndex + .5f) * tileDimension;
 
-                cloned.X = (xIndex + .5f) * tileDimension;
-                cloned.Y = -(yIndex + .5f) * tileDimension;
-
-                collectionForThisName.Polygons.Add(cloned);
-            }
+            collectionForThisName.Polygons.Add(cloned);
+            return cloned;
         }
 
         private static void AddRectangleCloneAtXY(MapLayer layer, float tileDimension, AxisAlignedRectangle rectangle, List<uint> tiles, long tilesetTileGid, int x, int y,
@@ -939,12 +1007,15 @@ namespace FlatRedBall.TileGraphics
 
             for (int i = 0; i < this.ShapeCollections.Count; i++)
             {
-                this.ShapeCollections[i].RemoveFromManagers(clearThis:false);
+                this.ShapeCollections[i].RemoveFromManagers(clearThis: false);
             }
 
             this.mMapLists.MakeTwoWay();
         }
 
+        /// <summary>
+        /// Fully removes the LayeredTileMap from the engine, including the rendering and collision.
+        /// </summary>
         public void Destroy()
         {
             // Make it one-way because we want the 

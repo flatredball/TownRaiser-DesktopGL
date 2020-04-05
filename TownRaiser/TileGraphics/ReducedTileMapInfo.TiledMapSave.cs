@@ -50,7 +50,7 @@ namespace TMXGlueLib.DataTypes
 
     public partial class ReducedTileMapInfo
     {
-        public static bool FastCreateFromTmx = false;
+        public static bool FastCreateFromTmx = true;
 
 
         /// <summary>
@@ -119,7 +119,9 @@ namespace TMXGlueLib.DataTypes
                 {
                     var objectLayer = tiledLayer as mapObjectgroup;
 
-                    var firstObjectWithTexture = objectLayer.@object.First(item => item.gid != 0);
+                    //The first element on the list might have null as a gid (it could be a shape)
+                    //so we should use ">" instead of "!=" to avoid ignoring the rest of the list
+                    var firstObjectWithTexture = objectLayer.@object?.FirstOrDefault(item => item.gid > 0);
 
                     firstGid = firstObjectWithTexture?.gid;
                 }
@@ -274,6 +276,9 @@ namespace TMXGlueLib.DataTypes
 
                     quad.LeftQuadCoordinate = (float)objectInstance.x;
                     quad.BottomQuadCoordinate = (float)-objectInstance.y;
+
+                    quad.OverridingWidth = objectInstance.width;
+                    quad.OverridingHeight = objectInstance.height;
 
                     quad.RotationDegrees = (float)objectInstance.Rotation;
 
