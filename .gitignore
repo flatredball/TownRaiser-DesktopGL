@@ -5,6 +5,10 @@
 *.cachefile
 *.Generated.Event.cs
 *.gvwx
+*.aeproperties
+
+# FRB: audio files created at compile time
+*.ogg
 
 # Created by https://www.gitignore.io/api/visualstudio
 # Edit at https://www.gitignore.io/?templates=visualstudio
@@ -29,12 +33,12 @@
 mono_crash.*
 
 # Build results
-[Dd]ebug/
+#[Dd]ebug/ # FRB: commenting out to allow Desktop GL DLLs within /Libraries/DesktopGl/Debug/*
 [Dd]ebugPublic/
-[Rr]elease/
+#[Rr]elease/ # FRB: commenting out to allow Desktop GL DLLs within /Libraries/DesktopGl/Release/*
 [Rr]eleases/
-x64/
-x86/
+#x64/ # FRB: commenting out to allow platform-specific DLLs at the root project level (https://gist.github.com/patridge/46a9e6f410499e47fdbfc6d81c7c92f0#gistcomment-2908389)
+#x86/ # FRB: commenting out to allow platform-specific DLLs at the root project level (https://gist.github.com/patridge/46a9e6f410499e47fdbfc6d81c7c92f0#gistcomment-2908389)
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
@@ -83,7 +87,7 @@ StyleCopReport.xml
 *.obj
 *.iobj
 *.pch
-*.pdb
+#*.pdb # FRB: commenting out to allow platform-specific PDBs at the root project level (e.g., debugging exceptions in included libraries)
 *.ipdb
 *.pgc
 *.pgd
