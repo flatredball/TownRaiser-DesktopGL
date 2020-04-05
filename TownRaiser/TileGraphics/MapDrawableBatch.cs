@@ -63,6 +63,8 @@ namespace FlatRedBall.TileGraphics
 
         Dictionary<string, List<int>> mNamedTileOrderedIndexes = new Dictionary<string, List<int>>();
 
+        public byte[] FlipFlagArray;
+
         private int mCurrentNumberOfTiles = 0;
 
         public float Red = 1;
@@ -181,6 +183,15 @@ namespace FlatRedBall.TileGraphics
         // so -(_parallaxMultiplier - 1) = value
         // thus -_parallaxMultiplier + 1 = value (get)
         private float _parallaxMultiplierX;
+
+        /// <summary>
+        /// The multiplier applied when scrolling the camera. 
+        /// Defaults to a value of 1, which 
+        /// means when the camera scrolls 1 unit, the 
+        /// layer moves by 1 unit to the left. A value of less than 1 should be used for
+        /// layers in the background, while a value greater
+        /// than 1 for layers in the foreground.
+        /// </summary>
         public float ParallaxMultiplierX
         {
             get { return -_parallaxMultiplierX + 1; }
@@ -188,6 +199,14 @@ namespace FlatRedBall.TileGraphics
         }
 
         private float _parallaxMultiplierY;
+        /// <summary>
+        /// The multiplier applied when scrolling the camera. 
+        /// Defaults to a value of 1, which 
+        /// means when the camera scrolls 1 unit, the 
+        /// layer moves by 1 unit to the left. A value of less than 1 should be used for
+        /// layers in the background, while a value greater
+        /// than 1 for layers in the foreground.
+        /// </summary>
         public float ParallaxMultiplierY
         {
             get { return -_parallaxMultiplierY + 1; }
@@ -218,6 +237,7 @@ namespace FlatRedBall.TileGraphics
 
             mTexture = texture;
             mVertices = new VertexPositionTexture[4 * numberOfTiles];
+            FlipFlagArray = new byte[numberOfTiles];
             mIndices = new int[6 * numberOfTiles];
         }
 
@@ -237,6 +257,7 @@ namespace FlatRedBall.TileGraphics
 
             mTexture = texture;
             mVertices = new VertexPositionTexture[4 * numberOfTiles];
+            FlipFlagArray = new byte[numberOfTiles];
             mIndices = new int[6 * numberOfTiles];
 
             mTileset = new Tileset(texture, textureTileDimensionWidth, textureTileDimensionHeight);
@@ -434,7 +455,7 @@ namespace FlatRedBall.TileGraphics
         }
 
         // Bring the texture coordinates in to adjust for rendering issues on dx9/ogl
-        public const float CoordinateAdjustment = .00002f;
+        public static float CoordinateAdjustment = .00002f;
 
         internal static MapDrawableBatch FromReducedLayer(TMXGlueLib.DataTypes.ReducedLayerInfo reducedLayerInfo, LayeredTileMap owner, TMXGlueLib.DataTypes.ReducedTileMapInfo rtmi, string contentManagerName)
         {
@@ -459,24 +480,35 @@ namespace FlatRedBall.TileGraphics
             toReturn.Name = reducedLayerInfo.Name;
 
             Vector3 position = new Vector3();
-            Vector2 tileDimensions = new Vector2(quadWidth, quadHeight);
 
 
-            IEnumerable<TMXGlueLib.DataTypes.ReducedQuadInfo> quads = null;
+            TMXGlueLib.DataTypes.ReducedQuadInfo[] quads = null;
 
             if (rtmi.NumberCellsWide > rtmi.NumberCellsTall)
             {
-                quads = reducedLayerInfo.Quads.OrderBy(item => item.LeftQuadCoordinate).ToList();
+                quads = reducedLayerInfo.Quads.OrderBy(item => item.LeftQuadCoordinate).ToArray();
                 toReturn.mSortAxis = SortAxis.X;
             }
             else
             {
-                quads = reducedLayerInfo.Quads.OrderBy(item => item.BottomQuadCoordinate).ToList();
+                quads = reducedLayerInfo.Quads.OrderBy(item => item.BottomQuadCoordinate).ToArray();
                 toReturn.mSortAxis = SortAxis.Y;
             }
 
-            foreach (var quad in quads)
+            var quadLength = quads.Length;
+            for (int i = 0; i < quadLength; i++)
             {
+                var quad = quads[i];
+
+                Vector2 tileDimensions = new Vector2(quadWidth, quadHeight);
+                if (quad.OverridingWidth != null)
+                {
+                    tileDimensions.X = quad.OverridingWidth.Value;
+                }
+                if (quad.OverridingHeight != null)
+                {
+                    tileDimensions.Y = quad.OverridingHeight.Value;
+                }
                 position.X = quad.LeftQuadCoordinate;
                 position.Y = quad.BottomQuadCoordinate;
 
@@ -520,6 +552,8 @@ namespace FlatRedBall.TileGraphics
                     textureValues.Z = textureValues.W;
                     textureValues.W = temp;
                 }
+
+                toReturn.FlipFlagArray[i] = quad.FlipFlags;
 
                 int tileIndex = toReturn.AddTile(position, tileDimensions,
                     //quad.LeftTexturePixel, quad.TopTexturePixel, quad.LeftTexturePixel + tileDimensionWidth, quad.TopTexturePixel + tileDimensionHeight);
@@ -832,6 +866,7 @@ namespace FlatRedBall.TileGraphics
         ///     4 points defining the boundaries in the texture for the tile.
         ///     (X = left, Y = right, Z = top, W = bottom)
         /// </param>
+        /// <returns>The index of the tile in the tile map, which can be used to modify the painted tile at a later time.</returns>
         public int AddTile(Vector3 bottomLeftPosition, Vector2 dimensions, Vector4 texture)
         {
             int toReturn = mCurrentNumberOfTiles;
@@ -871,10 +906,10 @@ namespace FlatRedBall.TileGraphics
         /// </summary>
         /// <param name="bottomLeftPosition"></param>
         /// <param name="tileDimensions"></param>
-        /// <param name="textureTopLeftX">Top left X coordinate in the core texture</param>
-        /// <param name="textureTopLeftY">Top left Y coordinate in the core texture</param>
-        /// <param name="textureBottomRightX">Bottom right X coordinate in the core texture</param>
-        /// <param name="textureBottomRightY">Bottom right Y coordinate in the core texture</param>
+        /// <param name="textureTopLeftX">Top left pixel X coordinate in the core texture</param>
+        /// <param name="textureTopLeftY">Top left pixel Y coordinate in the core texture</param>
+        /// <param name="textureBottomRightX">Bottom right pixel X coordinate in the core texture</param>
+        /// <param name="textureBottomRightY">Bottom right pixel Y coordinate in the core texture</param>
         public int AddTile(Vector3 bottomLeftPosition, Vector2 tileDimensions, int textureTopLeftX, int textureTopLeftY, int textureBottomRightX, int textureBottomRightY)
         {
             // Form vector4 for AddTile overload
