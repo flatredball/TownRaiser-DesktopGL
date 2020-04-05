@@ -109,7 +109,6 @@ namespace TownRaiser.Entities
             BounceRandomizingCoefficient = FlatRedBallServices.Random.Between(0.9f, 1.1f);
             AttackWobbleRandomizingCoefficient = FlatRedBallServices.Random.Between(0.9f, 1.1f);
 
-            // This should prob be done in Glue instead, but I don't think Glue currently supports this:
             this.HealthBarRuntimeInstance.CurrentHealthStatusState = GumRuntimes.HealthBarRuntime.HealthStatus.Full;
             this.HealthBarRuntimeInstance.Z = -2;
 

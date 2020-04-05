@@ -135,7 +135,6 @@ namespace TownRaiser.Entities
         {
             InitializeIUpdatestatusLists();
 
-            // This should prob be done in Glue instead, but I don't think Glue currently supports this:
             this.HealthBarRuntimeInstance.CurrentHealthStatusState = GumRuntimes.HealthBarRuntime.HealthStatus.Full;
             this.HealthBarRuntimeInstance.Z = -1;
 
