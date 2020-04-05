@@ -135,8 +135,6 @@ namespace TownRaiser.Entities
         {
             InitializeIUpdatestatusLists();
 
-            this.HealthBarRuntimeInstance.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Center;
-            this.HealthBarRuntimeInstance.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
             this.HealthBarRuntimeInstance.CurrentHealthStatusState = GumRuntimes.HealthBarRuntime.HealthStatus.Full;
             this.HealthBarRuntimeInstance.Z = -1;
 
@@ -162,11 +160,11 @@ namespace TownRaiser.Entities
         #region Activity Methods
 
         private void CustomActivity()
-		{
+        {
             ConstructionActivity();
             HealthBarActivity();
             TrainingActivity();
-		}
+        }
 
         private void ConstructionActivity()
         {
@@ -217,11 +215,9 @@ namespace TownRaiser.Entities
 
         private void HealthBarActivity()
         {
-
             var healthPercentage = 100 * this.CurrentHealth / (float)BuildingData.Health;
 
             this.HealthBarRuntimeInstance.HealthPercentage = healthPercentage;
-            this.HealthBarRuntimeInstance.PositionTo(this, -14);
         }
 
         private void TrainingActivity()

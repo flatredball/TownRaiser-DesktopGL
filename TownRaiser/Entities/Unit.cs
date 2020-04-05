@@ -105,13 +105,10 @@ namespace TownRaiser.Entities
         /// added to managers will not have this method called.
         /// </summary>
         private void CustomInitialize()
-		{
+        {
             BounceRandomizingCoefficient = FlatRedBallServices.Random.Between(0.9f, 1.1f);
             AttackWobbleRandomizingCoefficient = FlatRedBallServices.Random.Between(0.9f, 1.1f);
 
-            //// This should prob be done in Glue instead, but I don't think Glue currently supports this:
-            this.HealthBarRuntimeInstance.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Center;
-            this.HealthBarRuntimeInstance.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Bottom;
             this.HealthBarRuntimeInstance.CurrentHealthStatusState = GumRuntimes.HealthBarRuntime.HealthStatus.Full;
             this.HealthBarRuntimeInstance.Z = -2;
 
@@ -245,7 +242,7 @@ namespace TownRaiser.Entities
 
         private void HealthBarActivity()
         {
-            HealthBarRuntimeInstance.PositionTo(this, -SpriteInstance.Height * .85f);
+            HealthBarRuntimeInstance.Y = -SpriteInstance.Height * .85f;
 
             var healthPercentage = 100 * GetHealthRatio();
 

@@ -587,6 +587,21 @@
           <IndependentOfCamera>true</IndependentOfCamera>
         </NamedObjectSave>
         <NamedObjectSave>
+          <CustomProperty>
+            <Type>float</Type>
+            <Member>Y</Member>
+            <ValueAsFloat>-14</ValueAsFloat>
+          </CustomProperty>
+          <CustomProperty>
+            <Type>RenderingLibrary.Graphics.HorizontalAlignment</Type>
+            <Member>XOrigin</Member>
+            <ValueAsInt>1</ValueAsInt>
+          </CustomProperty>
+          <CustomProperty>
+            <Type>RenderingLibrary.Graphics.VerticalAlignment</Type>
+            <Member>YOrigin</Member>
+            <ValueAsInt>2</ValueAsInt>
+          </CustomProperty>
           <Properties>
             <PropertySave>
               <Name>SourceType</Name>
@@ -2170,6 +2185,16 @@
           <IndependentOfCamera>true</IndependentOfCamera>
         </NamedObjectSave>
         <NamedObjectSave>
+          <CustomProperty>
+            <Type>RenderingLibrary.Graphics.HorizontalAlignment</Type>
+            <Member>XOrigin</Member>
+            <ValueAsInt>1</ValueAsInt>
+          </CustomProperty>
+          <CustomProperty>
+            <Type>RenderingLibrary.Graphics.VerticalAlignment</Type>
+            <Member>YOrigin</Member>
+            <ValueAsInt>2</ValueAsInt>
+          </CustomProperty>
           <Properties>
             <PropertySave>
               <Name>SourceType</Name>
