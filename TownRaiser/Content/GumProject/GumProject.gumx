@@ -5,120 +5,149 @@
   <DefaultCanvasWidth>400</DefaultCanvasWidth>
   <DefaultCanvasHeight>300</DefaultCanvasHeight>
   <ShowOutlines>true</ShowOutlines>
+  <ConvertVariablesOnUnitTypeChange>false</ConvertVariablesOnUnitTypeChange>
   <RestrictToUnitValues>true</RestrictToUnitValues>
   <RestrictFileNamesForAndroid>false</RestrictFileNamesForAndroid>
   <Guides />
   <ScreenReference>
     <Name>GameScreenGum</Name>
     <ElementType>Screen</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ScreenReference>
   <ScreenReference>
     <Name>MainMenuGum</Name>
     <ElementType>Screen</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ScreenReference>
   <ScreenReference>
     <Name>TestScreenGum</Name>
     <ElementType>Screen</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ScreenReference>
   <ComponentReference>
     <Name>ActionStackContainer</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>ActionToolbar</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>FontTest</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>FramedButton</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>GroupSelector</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>HealthBar</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>IconButton</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>MenuTitleDisplay</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>MinimapContents</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>Resource</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>ResourceCostContainer</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>ResourceCostDisplay</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>ResourceDisplay</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>SelectedButtonDisplay</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>TrainingUnitSprite</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <ComponentReference>
     <Name>XButton</Name>
     <ElementType>Component</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </ComponentReference>
   <StandardElementReference>
     <Name>Circle</Name>
     <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <StandardElementReference>
     <Name>ColoredRectangle</Name>
     <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <StandardElementReference>
     <Name>Component</Name>
     <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <StandardElementReference>
     <Name>Container</Name>
     <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <StandardElementReference>
     <Name>NineSlice</Name>
     <ElementType>Standard</ElementType>
-  </StandardElementReference>
-  <StandardElementReference>
-    <Name>Rectangle</Name>
-    <ElementType>Standard</ElementType>
-  </StandardElementReference>
-  <StandardElementReference>
-    <Name>Sprite</Name>
-    <ElementType>Standard</ElementType>
-  </StandardElementReference>
-  <StandardElementReference>
-    <Name>Text</Name>
-    <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <StandardElementReference>
     <Name>Polygon</Name>
     <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
+  </StandardElementReference>
+  <StandardElementReference>
+    <Name>Rectangle</Name>
+    <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
+  </StandardElementReference>
+  <StandardElementReference>
+    <Name>Sprite</Name>
+    <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
+  </StandardElementReference>
+  <StandardElementReference>
+    <Name>Text</Name>
+    <ElementType>Standard</ElementType>
+    <LinkType>ReferenceOriginal</LinkType>
   </StandardElementReference>
   <BehaviorReference>
     <Name>ButtonBehavior</Name>

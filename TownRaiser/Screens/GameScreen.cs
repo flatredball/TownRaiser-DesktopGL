@@ -307,7 +307,7 @@ namespace TownRaiser.Screens
 
             // move the UI above all other stuff
             //GameScreenGum.Z = 20;
-            SpriteManager.AddToLayer(GameScreenGum, this.UiLayer);
+            GameScreenGum.MoveToFrbLayer(this.UiLayer, this.UiLayerGum);
 
             UpdateResourceDisplay();
         }
