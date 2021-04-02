@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using AARect = FlatRedBall.Math.Geometry.AxisAlignedRectangle;
 
 namespace FlatRedBall.TileCollisions
 {
@@ -14,7 +15,14 @@ namespace FlatRedBall.TileCollisions
 
         ShapeCollection mShapes;
         Axis mSortAxis = Axis.X;
+        /// <summary>
+        /// The leftmost edge of the map. This will correspond with the left edge of an AxisAlignedRectangle.
+        /// </summary>
         public float LeftSeedX = 0;
+
+        /// <summary>
+        /// The bottommost edge of the map. This will correspond with the bottom edge of an AxisAlignedRectangle.
+        /// </summary>
         public float BottomSeedY = 0;
         float mGridSize;
         bool mVisible = true;
@@ -101,6 +109,28 @@ namespace FlatRedBall.TileCollisions
             }
         }
 
+        Microsoft.Xna.Framework.Color mColor = Microsoft.Xna.Framework.Color.White;
+        public Microsoft.Xna.Framework.Color Color
+        {
+            get => mColor;
+            set
+            {
+                mColor = value;
+                for (int i = 0; i < mShapes.AxisAlignedRectangles.Count; i++)
+                {
+                    mShapes.AxisAlignedRectangles[i].Color = value;
+                }
+                for (int i = 0; i < mShapes.Circles.Count; i++)
+                {
+                    mShapes.Circles[i].Color = value;
+                }
+                for (int i = 0; i < mShapes.Polygons.Count; i++)
+                {
+                    mShapes.Polygons[i].Color = value;
+                }
+            }
+        }
+
         #endregion
 
         public TileShapeCollection()
@@ -113,6 +143,16 @@ namespace FlatRedBall.TileCollisions
         public void AddToLayer(FlatRedBall.Graphics.Layer layer)
         {
             this.mShapes.AddToManagers(layer);
+        }
+
+        public void AttachTo(PositionedObject newParent, bool changeRelative = true)
+        {
+            mShapes.AttachTo(newParent, changeRelative);
+        }
+
+        public void CopyAbsoluteToRelative()
+        {
+            mShapes.CopyAbsoluteToRelative();
         }
 
         public bool CollideAgainstSolid(AxisAlignedRectangle movableObject)
@@ -170,6 +210,234 @@ namespace FlatRedBall.TileCollisions
         {
             return mShapes.CollideAgainst(line, true, mSortAxis);
         }
+
+        public bool CollideAgainstClosest(Line line)
+        {
+            line.LastCollisionPoint = new Point(double.NaN, double.NaN);
+
+            Segment a = line.AsSegment();
+
+            if (SortAxis == Axis.X)
+            {
+                var leftmost = (float)System.Math.Min(line.AbsolutePoint1.X, line.AbsolutePoint2.X);
+                var rightmost = (float)System.Math.Max(line.AbsolutePoint1.X, line.AbsolutePoint2.X);
+
+                float clampedPosition = line.Position.X;
+
+                bool isPositionOnEnd = false;
+                if (clampedPosition <= leftmost)
+                {
+                    clampedPosition = leftmost;
+                    isPositionOnEnd = true;
+                }
+                else if (clampedPosition >= rightmost)
+                {
+                    clampedPosition = rightmost;
+                    isPositionOnEnd = true;
+                }
+
+                // only support rectangles for now (maybe forever)
+                var rectangles = Rectangles;
+
+                var firstIndex = rectangles.GetFirstAfter(leftmost - GridSize, Axis.X, 0, rectangles.Count);
+                var lastIndex = rectangles.GetFirstAfter(rightmost + GridSize, Axis.X, firstIndex, rectangles.Count);
+
+                if (isPositionOnEnd)
+                {
+                    FlatRedBall.Math.Geometry.AxisAlignedRectangle collidedRectangle = null;
+                    Point? intersectionPoint = null;
+                    if (clampedPosition < rightmost)
+                    {
+
+                        // start at the beginning of the list, go up
+                        for (int i = firstIndex; i < lastIndex; i++)
+                        {
+                            var rectangle = Rectangles[i];
+
+                            if (collidedRectangle != null)
+                            {
+                                if (rectangle.X > collidedRectangle.X)
+                                {
+                                    break;
+                                }
+
+                                if (rectangle.Y > collidedRectangle.Y && collidedRectangle.Y > line.Position.Y)
+                                {
+                                    break;
+                                }
+                                if (rectangle.Y < collidedRectangle.Y && collidedRectangle.Y < line.Position.Y)
+                                {
+                                    break;
+                                }
+                            }
+
+
+                            Point tl = new Point(
+                                rectangle.Position.X - rectangle.ScaleX,
+                                rectangle.Position.Y + rectangle.ScaleY);
+                            Point tr = new Point(
+                                rectangle.Position.X + rectangle.ScaleX,
+                                rectangle.Position.Y + rectangle.ScaleY);
+                            Point bl = new Point(
+                                rectangle.Position.X - rectangle.ScaleX,
+                                rectangle.Position.Y - rectangle.ScaleY);
+                            Point br = new Point(
+                                rectangle.Position.X + rectangle.ScaleX,
+                                rectangle.Position.Y - rectangle.ScaleY);
+
+                            Point tempPoint;
+
+                            // left gets priority
+                            // left
+                            var intersects = a.Intersects(new Segment(tl, bl), out tempPoint);
+
+                            if (rectangle.Y > line.Y)
+                            {
+                                // bottom gets priority over top
+                                if (!intersects)
+                                {
+                                    // bottom
+                                    intersects = a.Intersects(new Segment(bl, br), out tempPoint);
+                                }
+                                if (!intersects)
+                                {
+                                    // top
+                                    intersects = a.Intersects(new Segment(tl, tr), out tempPoint);
+                                }
+                            }
+                            else
+                            {
+                                // top gets priority over top
+                                if (!intersects)
+                                {
+                                    // top
+                                    intersects = a.Intersects(new Segment(tl, tr), out tempPoint);
+                                }
+                                if (!intersects)
+                                {
+                                    // bottom
+                                    intersects = a.Intersects(new Segment(bl, br), out tempPoint);
+                                }
+                            }
+                            if (!intersects)
+                            {
+                                // right
+                                intersects = a.Intersects(new Segment(tr, br), out tempPoint);
+                            }
+
+                            if (intersects)
+                            {
+                                intersectionPoint = tempPoint;
+                                collidedRectangle = rectangle;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // start at the end of the list, go down
+                        for (int i = lastIndex - 1; i >= firstIndex; i--)
+                        {
+                            var rectangle = Rectangles[i];
+
+                            if (collidedRectangle != null)
+                            {
+                                if (rectangle.X < collidedRectangle.X)
+                                {
+                                    break;
+                                }
+
+                                if (rectangle.Y > collidedRectangle.Y && collidedRectangle.Y > line.Position.Y)
+                                {
+                                    break;
+                                }
+                                if (rectangle.Y < collidedRectangle.Y && collidedRectangle.Y < line.Position.Y)
+                                {
+                                    break;
+                                }
+                            }
+
+
+
+                            Point tl = new Point(
+                                rectangle.Position.X - rectangle.ScaleX,
+                                rectangle.Position.Y + rectangle.ScaleY);
+                            Point tr = new Point(
+                                rectangle.Position.X + rectangle.ScaleX,
+                                rectangle.Position.Y + rectangle.ScaleY);
+                            Point bl = new Point(
+                                rectangle.Position.X - rectangle.ScaleX,
+                                rectangle.Position.Y - rectangle.ScaleY);
+                            Point br = new Point(
+                                rectangle.Position.X + rectangle.ScaleX,
+                                rectangle.Position.Y - rectangle.ScaleY);
+
+                            Point tempPoint;
+
+                            // right gets priority
+                            // right
+                            var intersects = a.Intersects(new Segment(tr, br), out tempPoint);
+
+                            if (rectangle.Y > line.Y)
+                            {
+                                // bottom gets priority over top
+                                if (!intersects)
+                                {
+                                    // bottom
+                                    intersects = a.Intersects(new Segment(bl, br), out tempPoint);
+                                }
+                                if (!intersects)
+                                {
+                                    // top
+                                    intersects = a.Intersects(new Segment(tl, tr), out tempPoint);
+                                }
+                            }
+                            else
+                            {
+                                // top gets priority over top
+                                if (!intersects)
+                                {
+                                    // top
+                                    intersects = a.Intersects(new Segment(tl, tr), out tempPoint);
+                                }
+                                if (!intersects)
+                                {
+                                    // bottom
+                                    intersects = a.Intersects(new Segment(bl, br), out tempPoint);
+                                }
+                            }
+                            if (!intersects)
+                            {
+                                // left
+                                intersects = a.Intersects(new Segment(tl, bl), out tempPoint);
+                            }
+
+                            if (intersects)
+                            {
+                                intersectionPoint = tempPoint;
+                                collidedRectangle = rectangle;
+                            }
+                        }
+                    }
+
+                    if (collidedRectangle != null)
+                    {
+                        line.LastCollisionPoint = intersectionPoint ?? new Point(double.NaN, double.NaN);
+
+                    }
+                    return collidedRectangle != null;
+                }
+                else
+                {
+                    throw new NotImplementedException("The argument line's position is not on either endpoint. This is a requirement for this type of collision.");
+                }
+            }
+            else if (SortAxis == Axis.Y)
+            {
+                throw new NotImplementedException("Bug Vic to do Y. Currently just X is done");
+            }
+            return false;
+        }
+
 
         public bool CollideAgainst(ICollidable collidable)
         {
@@ -462,10 +730,52 @@ namespace FlatRedBall.TileCollisions
             float belowY = positionedObject.Position.Y - GridSize;
             float middleY = positionedObject.Position.Y;
 
-            AxisAlignedRectangle rectangleLeftOf = GetRectangleAtPosition(leftOfX, middleY, rectanglesBeforeIndex, rectanglesAfterIndex);
-            AxisAlignedRectangle rectangleRightOf = GetRectangleAtPosition(rightOfX, middleY, rectanglesBeforeIndex, rectanglesAfterIndex);
-            AxisAlignedRectangle rectangleAbove = GetRectangleAtPosition(middleX, aboveY, rectanglesBeforeIndex, rectanglesAfterIndex);
-            AxisAlignedRectangle rectangleBelow = GetRectangleAtPosition(middleX, belowY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleLeftOf = GetRectangleAtPosition(leftOfX, middleY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleRightOf = GetRectangleAtPosition(rightOfX, middleY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleAbove = GetRectangleAtPosition(middleX, aboveY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleBelow = GetRectangleAtPosition(middleX, belowY, rectanglesBeforeIndex, rectanglesAfterIndex);
+
+            // how do we do this recursively?
+            var rectangleUpLeft = GetRectangleAtPosition(leftOfX, aboveY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleUpRight = GetRectangleAtPosition(rightOfX, aboveY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleDownLeft = GetRectangleAtPosition(leftOfX, belowY, rectanglesBeforeIndex, rectanglesAfterIndex);
+            var rectangleDownRight = GetRectangleAtPosition(rightOfX, belowY, rectanglesBeforeIndex, rectanglesAfterIndex);
+
+            void UpdateLShaped(AARect center)
+            {
+                if(center != null)
+                {
+                    var left = GetRectangleAtPosition(center.X - GridSize, center.Y);
+                    var upLeft = GetRectangleAtPosition(center.X - GridSize, center.Y + GridSize);
+                    var up = GetRectangleAtPosition(center.X, center.Y + GridSize);
+                    var upRight = GetRectangleAtPosition(center.X + GridSize, center.Y + GridSize);
+                    var right = GetRectangleAtPosition(center.X + GridSize, center.Y);
+                    var downRight = GetRectangleAtPosition(center.X + GridSize, center.Y - GridSize);
+                    var down = GetRectangleAtPosition(center.X, center.Y - GridSize);
+                    var downLeft = GetRectangleAtPosition(center.X - GridSize, center.Y - GridSize);
+
+                    UpdateLShapedPassNeighbors(center, left, upLeft, up, upRight, right, downRight, down, downLeft);
+                }
+            }
+
+            void UpdateLShapedPassNeighbors(AARect center, AARect left, AARect upLeft, AARect up, AARect upRight, AARect right, AARect downRight, AARect down, AARect downLeft)
+            {
+                center.RepositionHalfSize =
+                    left != null && up != null && upLeft == null ||
+                    up != null && right != null && upRight == null ||
+                    right != null && down != null && downRight == null ||
+                    down != null && left != null && downLeft == null;
+            }
+
+            UpdateLShapedPassNeighbors(positionedObject as AARect, rectangleLeftOf, rectangleUpLeft, rectangleAbove, rectangleUpRight, rectangleRightOf, rectangleDownRight, rectangleBelow, rectangleDownLeft);
+            UpdateLShaped(rectangleLeftOf);
+            UpdateLShaped(rectangleUpLeft);
+            UpdateLShaped(rectangleAbove);
+            UpdateLShaped(rectangleUpRight);
+            UpdateLShaped(rectangleRightOf);
+            UpdateLShaped(rectangleDownRight);
+            UpdateLShaped(rectangleBelow);
+            UpdateLShaped(rectangleDownLeft);
 
             RepositionDirections directions = RepositionDirections.All;
             if (rectangleLeftOf != null)
@@ -632,6 +942,109 @@ namespace FlatRedBall.TileCollisions
             }
         }
 
+        public void AssignAllShapesToRepositionOutward()
+        {
+            List<AxisAlignedRectangle> rectanglesWithNoneReposition = new List<AxisAlignedRectangle>();
+
+            // fill it with any rectangles
+            foreach (var rectangle in this.Rectangles)
+            {
+                if (rectangle.RepositionDirections == RepositionDirections.None)
+                {
+                    rectanglesWithNoneReposition.Add(rectangle);
+                }
+            }
+
+            HashSet<AxisAlignedRectangle> rectanglesProcessedThisRound = new HashSet<AxisAlignedRectangle>();
+
+            var width = this.Rectangles.FirstOrDefault()?.Width ?? 16;
+
+            RepositionDirections RepLeftOf(AxisAlignedRectangle rectangle)
+            {
+                var found = this.GetRectangleAtPosition(rectangle.X - width, rectangle.Y);
+                if (rectanglesProcessedThisRound.Contains(found)) return RepositionDirections.None;
+                else return found?.RepositionDirections ?? RepositionDirections.None;
+            }
+            RepositionDirections RepRightOf(AxisAlignedRectangle rectangle)
+            {
+                var found = this.GetRectangleAtPosition(rectangle.X + width, rectangle.Y);
+                if (rectanglesProcessedThisRound.Contains(found)) return RepositionDirections.None;
+                else return found?.RepositionDirections ?? RepositionDirections.None;
+            }
+            RepositionDirections RepAbove(AxisAlignedRectangle rectangle)
+            {
+                var found = this.GetRectangleAtPosition(rectangle.X, rectangle.Y + width);
+                if (rectanglesProcessedThisRound.Contains(found)) return RepositionDirections.None;
+                else return found?.RepositionDirections ?? RepositionDirections.None;
+            }
+            RepositionDirections RepBelow(AxisAlignedRectangle rectangle)
+            {
+                var found = this.GetRectangleAtPosition(rectangle.X, rectangle.Y - width);
+                if (rectanglesProcessedThisRound.Contains(found)) return RepositionDirections.None;
+                else return found?.RepositionDirections ?? RepositionDirections.None;
+            }
+
+            while (rectanglesWithNoneReposition.Count > 0)
+            {
+                rectanglesProcessedThisRound.Clear();
+
+                // see if any 
+                // reverse loop to remove:
+                for (int i = rectanglesWithNoneReposition.Count - 1; i > -1; i--)
+                {
+                    var rectangle = rectanglesWithNoneReposition[i];
+
+                    rectanglesProcessedThisRound.Add(rectangle);
+
+                    rectangle.RepositionDirections =
+                        (RepLeftOf(rectangle) & RepositionDirections.Left) |
+                        (RepRightOf(rectangle) & RepositionDirections.Right) |
+                        (RepAbove(rectangle) & RepositionDirections.Up) |
+                        (RepBelow(rectangle) & RepositionDirections.Down);
+
+                    if (rectangle.RepositionDirections != RepositionDirections.None)
+                    {
+                        rectanglesWithNoneReposition.RemoveAt(i);
+                    }
+                    else
+                    {
+                        // this thing is still using "none" reposition, but if it is missing collisions in one of the corners, then we can 
+                        // assign repositions appropriately.
+                        var aboveRight = this.GetRectangleAtPosition(rectangle.X + width, rectangle.Y + width);
+                        var aboveLeft = this.GetRectangleAtPosition(rectangle.X - width, rectangle.Y + width);
+                        var belowRight = this.GetRectangleAtPosition(rectangle.X + width, rectangle.Y - width);
+                        var belowLeft = this.GetRectangleAtPosition(rectangle.X - width, rectangle.Y - width);
+
+                        if (aboveRight == null)
+                        {
+                            rectangle.RepositionDirections |= RepositionDirections.Right;
+                            rectangle.RepositionDirections |= RepositionDirections.Up;
+                        }
+                        if (aboveLeft == null)
+                        {
+                            rectangle.RepositionDirections |= RepositionDirections.Left;
+                            rectangle.RepositionDirections |= RepositionDirections.Up;
+                        }
+                        if (belowRight == null)
+                        {
+                            rectangle.RepositionDirections |= RepositionDirections.Right;
+                            rectangle.RepositionDirections |= RepositionDirections.Down;
+                        }
+                        if (belowLeft == null)
+                        {
+                            rectangle.RepositionDirections |= RepositionDirections.Left;
+                            rectangle.RepositionDirections |= RepositionDirections.Down;
+                        }
+                        if (rectangle.RepositionDirections != RepositionDirections.None)
+                        {
+                            rectanglesWithNoneReposition.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+        }
+
+
         public override string ToString()
         {
             return Name;
@@ -666,6 +1079,9 @@ namespace FlatRedBall.TileCollisions
         public static void AddCollisionFrom(this TileShapeCollection tileShapeCollection,
             MapDrawableBatch layer, LayeredTileMap layeredTileMap, Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate)
         {
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
+
             var properties = layeredTileMap.TileProperties;
 
             foreach (var kvp in properties)
@@ -702,8 +1118,11 @@ namespace FlatRedBall.TileCollisions
         }
 
         public static void AddCollisionFrom(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap,
-            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate)
+            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, bool removeTilesOnAdd = false)
         {
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
+
             var properties = layeredTileMap.TileProperties;
 
             foreach (var kvp in properties)
@@ -719,6 +1138,12 @@ namespace FlatRedBall.TileCollisions
 
                     foreach (var layer in layeredTileMap.MapLayers)
                     {
+                        List<int> indexesToRemove = null;
+                        if (removeTilesOnAdd)
+                        {
+                            indexesToRemove = new List<int>();
+                        }
+
                         var dictionary = layer.NamedTileOrderedIndexes;
 
                         if (dictionary.ContainsKey(name))
@@ -735,7 +1160,17 @@ namespace FlatRedBall.TileCollisions
                                 var centerY = bottom + dimensionHalf;
                                 tileShapeCollection.AddCollisionAtWorld(centerX,
                                     centerY);
+
                             }
+                            if(removeTilesOnAdd)
+                            {
+                                indexesToRemove.AddRange(indexList);
+                            }
+                        }
+
+                        if(removeTilesOnAdd && indexesToRemove.Count > 0)
+                        {
+                            layer.RemoveQuads(indexesToRemove);
                         }
                     }
                 }
@@ -743,18 +1178,21 @@ namespace FlatRedBall.TileCollisions
         }
 
         public static void AddMergedCollisionFrom(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap,
-            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate)
+            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, bool removeTilesOnAdd = false)
         {
             var properties = layeredTileMap.TileProperties;
             float dimension = layeredTileMap.WidthPerTile.Value;
             float dimensionHalf = dimension / 2.0f;
             tileShapeCollection.GridSize = dimension;
 
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
+
             Dictionary<int, List<int>> rectangleIndexes = new Dictionary<int, List<int>>();
 
             foreach (var layer in layeredTileMap.MapLayers)
             {
-                AddCollisionFromLayerInternal(tileShapeCollection, predicate, properties, dimension, dimensionHalf, rectangleIndexes, layer);
+                AddCollisionFromLayerInternal(tileShapeCollection, predicate, properties, dimension, dimensionHalf, rectangleIndexes, layer, removeTilesOnAdd);
             }
 
             ApplyMerging(tileShapeCollection, dimension, rectangleIndexes);
@@ -767,6 +1205,9 @@ namespace FlatRedBall.TileCollisions
             float dimension = layeredTileMap.WidthPerTile.Value;
             float dimensionHalf = dimension / 2.0f;
             tileShapeCollection.GridSize = dimension;
+
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
 
             Dictionary<int, List<int>> rectangleIndexes = new Dictionary<int, List<int>>();
 
@@ -781,22 +1222,32 @@ namespace FlatRedBall.TileCollisions
                 layeredTileMap, (list) => list.Any(item => item.Name == propertyName));
         }
 
-        public static void AddMergedCollisionFromTilesWithProperty(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap, string propertyName)
+        public static void AddMergedCollisionFromTilesWithProperty(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap,
+            string propertyName, bool removeTilesOnAdd = false)
         {
             tileShapeCollection.AddMergedCollisionFrom(
-                layeredTileMap, (list) => list.Any(item => item.Name == propertyName));
+                layeredTileMap, (list) => list.Any(item => item.Name == propertyName), removeTilesOnAdd);
         }
 
-        public static void AddCollisionFromTilesWithType(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap, string type)
+        public static void AddCollisionFromTilesWithType(this TileShapeCollection tileShapeCollection, 
+            LayeredTileMap layeredTileMap, string type, bool removeTilesOnAdd = false)
         {
-            tileShapeCollection.AddCollisionFrom(
-                layeredTileMap, (list) => list.Any(item => item.Name == "Type" && (item.Value as string) == type));
+            if(layeredTileMap != null)
+            {
+                tileShapeCollection.AddCollisionFrom(
+                    layeredTileMap, 
+                    (list) => list.Any(item => item.Name == "Type" && (item.Value as string) == type),
+                    removeTilesOnAdd);
+            }
         }
 
         public static void AddMergedCollisionFromTilesWithType(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap, string type)
         {
-            tileShapeCollection.AddMergedCollisionFrom(
+            if (layeredTileMap != null)
+            {
+                tileShapeCollection.AddMergedCollisionFrom(
                 layeredTileMap, (list) => list.Any(item => item.Name == "Type" && (item.Value as string) == type));
+            }
         }
 
         public static void MergeRectangles(this TileShapeCollection tileShapeCollection)
@@ -895,7 +1346,7 @@ namespace FlatRedBall.TileCollisions
             }
         }
 
-        private static void AddCollisionFromLayerInternal(TileShapeCollection tileShapeCollection, Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, Dictionary<string, List<TMXGlueLib.DataTypes.NamedValue>> properties, float dimension, float dimensionHalf, Dictionary<int, List<int>> rectangleIndexes, MapDrawableBatch layer)
+        private static void AddCollisionFromLayerInternal(TileShapeCollection tileShapeCollection, Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, Dictionary<string, List<TMXGlueLib.DataTypes.NamedValue>> properties, float dimension, float dimensionHalf, Dictionary<int, List<int>> rectangleIndexes, MapDrawableBatch layer, bool removeTilesOnAdd = false)
         {
             foreach (var kvp in properties)
             {
@@ -904,6 +1355,11 @@ namespace FlatRedBall.TileCollisions
 
                 if (predicate(namedValues))
                 {
+                    List<int> indexesToRemove = null;
+                    if (removeTilesOnAdd)
+                    {
+                        indexesToRemove = new List<int>();
+                    }
 
                     var dictionary = layer.NamedTileOrderedIndexes;
 
@@ -950,6 +1406,15 @@ namespace FlatRedBall.TileCollisions
                             }
                             listToAddTo.Add(value);
 
+                            if (removeTilesOnAdd)
+                            {
+                                indexesToRemove.AddRange(indexList);
+                            }
+
+                        }
+                        if (removeTilesOnAdd && indexesToRemove.Count > 0)
+                        {
+                            layer.RemoveQuads(indexesToRemove);
                         }
                     }
                 }
@@ -1046,6 +1511,144 @@ namespace FlatRedBall.TileCollisions
 
         }
 
+        public static void RemoveCollisionFrom(this TileShapeCollection tileShapeCollection, LayeredTileMap layeredTileMap,
+            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, bool removeTilesOnRemove = false)
+        {
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
+
+            var properties = layeredTileMap.TileProperties;
+
+            foreach (var kvp in properties)
+            {
+                string name = kvp.Key;
+                var namedValues = kvp.Value;
+
+                if (predicate(namedValues))
+                {
+                    float dimension = layeredTileMap.WidthPerTile.Value;
+                    float dimensionHalf = dimension / 2.0f;
+                    tileShapeCollection.GridSize = dimension;
+
+                    foreach (var layer in layeredTileMap.MapLayers)
+                    {
+                        List<int> indexesToRemove = null;
+                        if (removeTilesOnRemove)
+                        {
+                            indexesToRemove = new List<int>();
+                        }
+
+                        var dictionary = layer.NamedTileOrderedIndexes;
+
+                        if (dictionary.ContainsKey(name))
+                        {
+                            var indexList = dictionary[name];
+
+                            foreach (var index in indexList)
+                            {
+                                float left;
+                                float bottom;
+                                layer.GetBottomLeftWorldCoordinateForOrderedTile(index, out left, out bottom);
+
+                                var centerX = left + dimensionHalf;
+                                var centerY = bottom + dimensionHalf;
+                                //tileShapeCollection.AddCollisionAtWorld(centerX,
+                                //    centerY);
+                                tileShapeCollection.RemoveCollisionAtWorld(centerX, centerY);
+
+                            }
+                            if (removeTilesOnRemove)
+                            {
+                                indexesToRemove.AddRange(indexList);
+                            }
+                        }
+
+                        if (removeTilesOnRemove && indexesToRemove.Count > 0)
+                        {
+                            layer.RemoveQuads(indexesToRemove);
+                        }
+                    }
+                }
+            }
+        }
+
+        public static void RemoveCollisionFrom(this TileShapeCollection tileShapeCollection, MapDrawableBatch layer,
+            Func<List<TMXGlueLib.DataTypes.NamedValue>, bool> predicate, bool removeTilesOnRemove = false)
+        {
+            LayeredTileMap layeredTileMap = layer.Parent as LayeredTileMap;
+
+            tileShapeCollection.LeftSeedX = layeredTileMap.X;
+            tileShapeCollection.BottomSeedY = layeredTileMap.Y - layeredTileMap.Height;
+
+            var properties = layeredTileMap.TileProperties;
+
+            foreach (var kvp in properties)
+            {
+                string name = kvp.Key;
+                var namedValues = kvp.Value;
+
+                if (predicate(namedValues))
+                {
+                    float dimension = layeredTileMap.WidthPerTile.Value;
+                    float dimensionHalf = dimension / 2.0f;
+                    tileShapeCollection.GridSize = dimension;
+
+                    List<int> indexesToRemove = null;
+                    if (removeTilesOnRemove)
+                    {
+                        indexesToRemove = new List<int>();
+                    }
+
+                    var dictionary = layer.NamedTileOrderedIndexes;
+
+                    if (dictionary.ContainsKey(name))
+                    {
+                        var indexList = dictionary[name];
+
+                        foreach (var index in indexList)
+                        {
+                            float left;
+                            float bottom;
+                            layer.GetBottomLeftWorldCoordinateForOrderedTile(index, out left, out bottom);
+
+                            var centerX = left + dimensionHalf;
+                            var centerY = bottom + dimensionHalf;
+                            //tileShapeCollection.AddCollisionAtWorld(centerX,
+                            //    centerY);
+                            tileShapeCollection.RemoveCollisionAtWorld(centerX, centerY);
+
+                        }
+                        if (removeTilesOnRemove)
+                        {
+                            indexesToRemove.AddRange(indexList);
+                        }
+                    }
+
+                    if (removeTilesOnRemove && indexesToRemove.Count > 0)
+                    {
+                        layer.RemoveQuads(indexesToRemove);
+                    }
+                }
+            }
+        }
+
+        public static void RemoveCollisionFromTilesWithType(this TileShapeCollection tileShapeCollection,
+            LayeredTileMap layeredTileMap, string type, bool removeTilesOnAdd = false)
+        {
+            tileShapeCollection.RemoveCollisionFrom(
+                layeredTileMap,
+                (list) => list.Any(item => item.Name == "Type" && (item.Value as string) == type),
+                removeTilesOnAdd);
+        }
+
+        public static void RemoveCollisionFromTilesWithType(this TileShapeCollection tileShapeCollection,
+            MapDrawableBatch layer, string type, bool removeTilesOnAdd = false)
+        {
+            tileShapeCollection.RemoveCollisionFrom(
+                layer,
+                (list) => list.Any(item => item.Name == "Type" && (item.Value as string) == type),
+                removeTilesOnAdd);
+        }
     }
 
 
