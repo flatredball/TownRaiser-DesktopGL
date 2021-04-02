@@ -1,4 +1,5 @@
-# FRB
+# FlatRedBall (FRB) .gitignore
+# https://gist.github.com/patridge/46a9e6f410499e47fdbfc6d81c7c92f0/
 
 *.Generated.cs
 *.csvSettings
@@ -9,6 +10,9 @@
 
 # FRB: audio files created at compile time
 *.ogg
+
+# FRB: ignore Glue-generated XNB files
+BuiltXnbs/*
 
 # Created by https://www.gitignore.io/api/visualstudio
 # Edit at https://www.gitignore.io/?templates=visualstudio
@@ -360,5 +364,3 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/visualstudio
-
-BuiltXnbs/*
