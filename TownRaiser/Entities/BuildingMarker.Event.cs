@@ -14,9 +14,9 @@ namespace TownRaiser.Entities
 	{
         void OnAfterBuildingDataSet (object sender, EventArgs e)
         {
-            if(BuildingData != null)
+            if (BuildingData != null)
             {
-                this.SpriteInstance.CurrentChainName = BuildingData.Name;            
+                this.SpriteInstance.CurrentChainName = BuildingData.Name;
             }
         }
 		
