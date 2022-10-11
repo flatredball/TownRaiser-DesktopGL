@@ -203,7 +203,8 @@ namespace TownRaiser.Screens
             woodResourceShapeCollection.AddMergedCollisionFrom(WorldMap,
             (list) => list.Any(item => item.Name == "ResourceType" && item.Value as string == "Wood"));
 #if DEBUG
-            woodResourceShapeCollection.Visible = Entities.DebuggingVariables.ShowResourceCollision;
+            woodResourceShapeCollection.Visible = Entities.DebuggingVariables.
+            ;
             if (Entities.DebuggingVariables.ShowResourceCollision)
             {
                 foreach (var rect in woodResourceShapeCollection.Rectangles)
@@ -211,6 +212,9 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Green;
                 }
             }
+#else 
+            woodResourceShapeCollection.Visible = false;
+
 #endif
 
             stoneResourceShapeCollection = new TileShapeCollection();
@@ -225,6 +229,9 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Gray;
                 }
             }
+#else
+            stoneResourceShapeCollection.Visible = false;
+
 #endif
 
             waterResourceShapeCollection = new TileShapeCollection();
@@ -239,6 +246,9 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Blue;
                 }
             }
+#else 
+            waterResourceShapeCollection.Visible = false;
+
 #endif
 
             goldResourceShapeCollection = new TileShapeCollection();
@@ -253,10 +263,13 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Yellow;
                 }
             }
+#else 
+            goldResourceShapeCollection.Visible = false;
+
 #endif
 
 
-            
+
         }
 
         private void InitializeCamera()

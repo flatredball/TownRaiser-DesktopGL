@@ -117,6 +117,8 @@ namespace TownRaiser.Entities
 
 #if DEBUG
             this.ResourceCollectCircleInstance.Visible = DebuggingVariables.ShowResourceCollision;
+#else
+            this.ResourceCollectCircleInstance.Visible = false;
 #endif
         }
 
