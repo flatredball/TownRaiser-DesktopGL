@@ -203,7 +203,6 @@ namespace TownRaiser.Screens
             woodResourceShapeCollection.AddMergedCollisionFrom(WorldMap,
             (list) => list.Any(item => item.Name == "ResourceType" && item.Value as string == "Wood"));
 #if DEBUG
-            woodResourceShapeCollection.Visible = Entities.DebuggingVariables.ShowResourceCollision;
             if (Entities.DebuggingVariables.ShowResourceCollision)
             {
                 foreach (var rect in woodResourceShapeCollection.Rectangles)
