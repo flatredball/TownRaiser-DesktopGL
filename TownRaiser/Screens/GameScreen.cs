@@ -211,6 +211,8 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Green;
                 }
             }
+#else
+            woodResourceShapeCollection.Visible = false;
 #endif
 
             stoneResourceShapeCollection = new TileShapeCollection();
@@ -225,6 +227,8 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Gray;
                 }
             }
+#else
+            stoneResourceShapeCollection.Visible = false;
 #endif
 
             waterResourceShapeCollection = new TileShapeCollection();
@@ -239,6 +243,8 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Blue;
                 }
             }
+#else
+            waterResourceShapeCollection.Visible = false;
 #endif
 
             goldResourceShapeCollection = new TileShapeCollection();
@@ -253,10 +259,12 @@ namespace TownRaiser.Screens
                     rect.Color = Microsoft.Xna.Framework.Color.Yellow;
                 }
             }
+#else
+            goldResourceShapeCollection.Visible = false;
 #endif
 
 
-            
+
         }
 
         private void InitializeCamera()
