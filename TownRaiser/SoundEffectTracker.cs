@@ -60,17 +60,18 @@ namespace TownRaiser
 
         public static void TryPlaySound(SoundEffect soundEffect, string soundEffectName, float volume = 1, float pitch = 0, float pan = 0)
         {
-#if DEBUG
+            // HACK: Handle if a sound effect doesn't exist. For example, enemies don't have spawn sounds, yet the game tries to play one anyway.
             if (soundEffect == null)
             {
+#if DEBUG
                 if (Entities.DebuggingVariables.ThrowExceptionIfNoSoundEffect)
                 {
                     throw new Exception($"The sound effect: {soundEffectName}, does not exist.");
                 }
+#endif
 
                 return;
             }
-#endif
 
             var currentScreen = FlatRedBall.Screens.ScreenManager.CurrentScreen;
             var lastSoundPlayTime = LastPlayTime(soundEffectName);
